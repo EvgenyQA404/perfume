@@ -19,9 +19,10 @@
 
 и перейдите в его папку, например:
 
-cd C:\Users\<ваше_имя>\PycharmProjects\perfume
+cd C:\Users\<ваше_имя>\perfume
 
 3️⃣ **Создать виртуальное окружение и активировать его**
+
 <pre>
 python -m venv .venv
 .venv\Scripts\activate
