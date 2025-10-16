@@ -22,11 +22,10 @@
 cd C:\Users\<ваше_имя>\PycharmProjects\perfume
 
 3️⃣ Создать виртуальное окружение и активировать его
-<pre> ```
+<pre>
 python -m venv .venv
-
 .venv\Scripts\activate
-``` </pre>
+</pre>
 
 4️⃣ Установить зависимости
 
