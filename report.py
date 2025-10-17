@@ -113,7 +113,7 @@ def build_excel_report(out_path: Path) -> Path:
         if max_name_len:
             ws.column_dimensions[get_column_letter(col_product)].width = min(max(max_name_len + 4, 24), 70)
 
-    # применить числовые форматы и подсветку
+    # применить числовые форматы с «+» для положительных значений
     col_change = headers.get("Изменение (₽)")
     col_price = headers.get("Цена (₽)")
     col_prev = headers.get("Предыдущая цена (₽)")
@@ -127,10 +127,12 @@ def build_excel_report(out_path: Path) -> Path:
             ws.cell(row=row, column=col_prev).number_format = "#,##0"
     if col_change:
         for row in range(2, ws.max_row + 1):
-            ws.cell(row=row, column=col_change).number_format = "#,##0"
+            # формат с плюсом: positive;negative;zero
+            ws.cell(row=row, column=col_change).number_format = "+#,##0;-#,##0;0"
     if col_change_pct:
         for row in range(2, ws.max_row + 1):
-            ws.cell(row=row, column=col_change_pct).number_format = "0.00"
+            # формат с плюсом и двумя знаками после запятой
+            ws.cell(row=row, column=col_change_pct).number_format = "+0.00;-0.00;0.00"
 
     # подсветка изменений
     if col_change:
@@ -141,18 +143,22 @@ def build_excel_report(out_path: Path) -> Path:
             try:
                 delta = float(cell.value)
             except (TypeError, ValueError):
-                delta = 0
+                delta = 0.0
+
             if delta < 0:
-                # зелёный — цена снизилась
+                # зелёный — цена снизилась (закрашиваем Δ, текущую цену и предыдущую)
                 fill = PatternFill(fill_type="solid", fgColor="C6EFCE")
                 for c in (cell, prev_cell, price_cell):
                     if c is not None:
                         c.font = Font(bold=True)
                         c.fill = fill
             elif delta > 0:
-                # розовый — цена выросла
+                # розовый — цена выросла (тоже закрашиваем Δ, текущую и предыдущую)
                 fill = PatternFill(fill_type="solid", fgColor="FFC7CE")
-                cell.fill = fill
+                for c in (cell, prev_cell, price_cell):
+                    if c is not None:
+                        c.font = Font(bold=True)
+                        c.fill = fill
 
     # Стили для «История»
     if "История" in wb.sheetnames:
@@ -177,11 +183,12 @@ def build_excel_report(out_path: Path) -> Path:
     lg = wb.create_sheet(sheet_name)
     lg["A1"] = "Обозначения и подсветка"
     lg["A1"].font = Font(bold=True)
-    lg["A3"] = "• «Изменение (₽)» — разница между текущей ценой и предыдущей."
+    lg["A3"] = "• «Изменение (₽)» — разница между текущей и предыдущей ценой."
     lg["A4"] = "• «Изменение (%)» — отношение изменения к предыдущей цене × 100."
-    lg["A5"] = "• Зелёная подсветка — цена снизилась."
-    lg["A6"] = "• Розовая подсветка — цена выросла."
-    lg["A7"] = "• Если предыдущей цены нет (первый замер), изменение не вычисляется."
+    lg["A5"] = "• Зелёная подсветка — цена снизилась (подсвечиваются 3 ячейки: Δ, текущая и предыдущая цена)."
+    lg["A6"] = "• Розовая подсветка — цена выросла (подсвечиваются 3 ячейки: Δ, текущая и предыдущая цена)."
+    lg["A7"] = "• Для положительных чисел проставляется знак «+» в столбцах «Изменение (₽)» и «Изменение (%)»."
+    lg["A8"] = "• Если предыдущей цены нет (первый замер), изменение не вычисляется."
 
     autosize(lg, min_w=30)
     wb.save(out_path)
